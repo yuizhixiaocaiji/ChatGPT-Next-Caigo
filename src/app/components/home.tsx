@@ -1,9 +1,9 @@
 "use client";
 
 import { HashRouter as Router } from "react-router-dom";
-
+import styles from "./home.module.scss";
 function Screen() {
-  return <div>Hello</div>;
+  return <div className={styles.container}>hello</div>;
 }
 
 export function Home() {

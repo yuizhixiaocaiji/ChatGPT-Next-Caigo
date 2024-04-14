@@ -4,7 +4,7 @@ import ChatGptIcon from "../icons/chatgpt.svg";
 
 export function SideBar(props: { className?: string }) {
   return (
-    <div className={`${styles.sideBar} ${props.className}`}>
+    <div className={`${styles.sidebar} ${props.className}`}>
       <div className={styles["sidebar-header"]} data-tauri-drag-region>
         <div className={styles["sidebar-title"]} data-tauri-drag-region>
           菜狗GPT

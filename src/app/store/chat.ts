@@ -186,6 +186,13 @@ export const useChatStore = createPersistStore(
           5000
         );
       },
+
+      updateCurrentSession(updater: (session: ChatSession) => void) {
+        const sessions = get().sessions;
+        const index = get().currentSessionIndex;
+        updater(sessions[index]);
+        set(() => ({ sessions }));
+      },
     };
 
     return methods;

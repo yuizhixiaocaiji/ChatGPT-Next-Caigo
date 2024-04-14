@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useAppConfig } from "../store/configs";
 import { collectModels } from "./model";
+import { useAccessStore } from "../store/access";
 
 export function useAllModels() {
   const accessStore = useAccessStore();

@@ -2,10 +2,14 @@ import IconButton from "./button";
 import styles from "./chat.module.scss";
 import RenameIcon from "../icons/rename.svg";
 import ExportIcon from "../icons/share.svg";
+import MaxIcon from "../icons/max.svg";
+import MinIcon from "../icons/min.svg";
 import { useMobileScreen } from "../utils/utils";
 import { useMemo } from "react";
+import { getClientConfig } from "../config/client";
 
 function _Chat() {
+  const config = useAppConfig();
   const clientConfig = useMemo(() => getClientConfig(), []);
   const isMobileScreen = useMobileScreen();
   const showMaxIcon = !isMobileScreen && !clientConfig?.isApp;

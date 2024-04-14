@@ -1,4 +1,5 @@
 import { BuildConfig, getBuildConfig } from "./build";
+
 export function getClientConfig() {
   if (typeof document !== "undefined") {
     // client side
@@ -22,5 +23,5 @@ function queryMeta(key: string, defaultValue?: string): string {
     ret = defaultValue ?? "";
   }
 
-  return ret;
+  return JSON.stringify(ret);
 }

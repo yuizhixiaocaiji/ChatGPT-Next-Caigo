@@ -20,7 +20,7 @@ export enum StoreKey {
 export const OWNER = "yuizhixiaocaiji";
 export const REPO = "ChatGPT-Next-Caigo";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
-
+export const ACCESS_CODE_PREFIX = "nk-";
 export const DEFAULT_SIDEBAR_WIDTH = 300;
 
 export const DEFAULT_MODELS = [
@@ -268,6 +268,19 @@ export const DEFAULT_MODELS = [
     },
   },
 ] as const;
+
+export enum ApiPath {
+  Cors = "",
+  OpenAI = "/api/openai",
+  Anthropic = "/api/anthropic",
+}
+export enum ServiceProvider {
+  OpenAI = "OpenAI",
+  Azure = "Azure",
+  Google = "Google",
+  Anthropic = "Anthropic",
+}
+export const DEFAULT_API_HOST = "https://api.nextchat.dev";
 
 export const DEFAULT_INPUT_TEMPLATE = `{{input}}`; // input / time / model / lang
 // export const DEFAULT_SYSTEM_TEMPLATE = `

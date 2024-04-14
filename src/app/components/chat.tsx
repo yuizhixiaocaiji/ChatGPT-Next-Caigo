@@ -9,10 +9,11 @@ import SendWhiteIcon from "../icons/send-white.svg";
 import { useMobileScreen } from "../utils/utils";
 import { useMemo, useRef, useState } from "react";
 import { getClientConfig } from "../config/client";
-import { useAppConfig } from "../store/configs";
+import { Theme, useAppConfig } from "../store/configs";
 import { Prompt } from "../store/prompt";
 import { useNavigate } from "react-router-dom";
 import { useChatStore } from "../store/chat";
+import { ChatControllerPool } from "../client/controller";
 
 export type RenderPrompt = Pick<Prompt, "title" | "content">;
 
@@ -44,6 +45,23 @@ export function ChatActions(props: {
   const config = useAppConfig();
   const navigate = useNavigate();
   const chatStore = useChatStore();
+
+  // switch themes
+  const theme = config.theme;
+
+  function nextTheme() {
+    const themes = [Theme.Auto, Theme.Light, Theme.Dark];
+    const themeIndex = themes.indexOf(theme);
+    const nextIndex = (themeIndex + 1) % themes.length;
+    const nextTheme = themes[nextIndex];
+    config.update((config) => (config.theme = nextTheme));
+  }
+  // stop all responses
+  const couldStop = ChatControllerPool.hasPending();
+  const stopAll = () => ChatControllerPool.stopAll();
+
+  const currentModel = chatStore.currentSession().mask.modelConfig.model;
+  const allModels = useAllModels();
 }
 
 function _Chat() {

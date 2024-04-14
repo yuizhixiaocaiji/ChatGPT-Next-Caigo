@@ -7,6 +7,7 @@ import MinIcon from "../icons/min.svg";
 import { useMobileScreen } from "../utils/utils";
 import { useMemo } from "react";
 import { getClientConfig } from "../config/client";
+import { useAppConfig } from "../store/configs";
 
 function _Chat() {
   const config = useAppConfig();

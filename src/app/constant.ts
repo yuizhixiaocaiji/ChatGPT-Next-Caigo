@@ -22,6 +22,9 @@ export const REPO = "ChatGPT-Next-Caigo";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
 export const ACCESS_CODE_PREFIX = "nk-";
 export const DEFAULT_SIDEBAR_WIDTH = 300;
+export const CHAT_PAGE_SIZE = 15;
+
+export const LAST_INPUT_KEY = "last-input";
 
 export const DEFAULT_MODELS = [
   {
@@ -268,6 +271,18 @@ export const DEFAULT_MODELS = [
     },
   },
 ] as const;
+
+export const KnowledgeCutOffDate: Record<string, string> = {
+  default: "2021-09",
+  "gpt-4-turbo": "2023-12",
+  "gpt-4-turbo-preview": "2023-12",
+  "gpt-4-1106-preview": "2023-04",
+  "gpt-4-0125-preview": "2023-12",
+  "gpt-4-vision-preview": "2023-04",
+  // After improvements,
+  // it's now easier to add "KnowledgeCutOffDate" instead of stupid hardcoding it, as was done previously.
+  "gemini-pro": "2023-12",
+};
 
 export enum ApiPath {
   Cors = "",

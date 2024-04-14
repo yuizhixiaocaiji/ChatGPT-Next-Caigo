@@ -29,18 +29,34 @@ import AutoIcon from "../icons/auto.svg";
 import BottomIcon from "../icons/bottom.svg";
 import StopIcon from "../icons/pause.svg";
 import RobotIcon from "../icons/robot.svg";
-import { isVisionModel, useMobileScreen } from "../utils/utils";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { compressImage, isVisionModel, useMobileScreen } from "../utils/utils";
+import {
+  RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { getClientConfig } from "../config/client";
-import { ModelType, Theme, useAppConfig } from "../store/configs";
-import { Prompt } from "../store/prompt";
+import { ModelType, SubmitKey, Theme, useAppConfig } from "../store/configs";
+import { Prompt, usePromptStore } from "../store/prompt";
 import { useNavigate } from "react-router-dom";
-import { useChatStore } from "../store/chat";
+import { ChatMessage, useChatStore, createMessage } from "../store/chat";
 import { ChatControllerPool } from "../client/controller";
 import { useAllModels } from "../utils/hooks";
 import { showToast } from "./ui-lib";
 import Locale from "../locales";
-import { Path } from "../constant";
+import { CHAT_PAGE_SIZE, LAST_INPUT_KEY, Path } from "../constant";
+import { useDebouncedCallback } from "use-debounce";
+import { ChatCommandPrefix, useChatCommand } from "../command";
+
+declare global {
+  interface Window {
+    dataLayer?: Object[];
+    [key: string]: any;
+  }
+}
 
 export type RenderPrompt = Pick<Prompt, "title" | "content">;
 
@@ -265,21 +281,334 @@ export function ChatActions(props: {
   );
 }
 
+function useScrollToBottom(
+  scrollRef: RefObject<HTMLDivElement>,
+  detach: boolean = false
+) {
+  // for auto-scroll
+
+  const [autoScroll, setAutoScroll] = useState(true);
+  function scrollDomToBottom() {
+    const dom = scrollRef.current;
+    if (dom) {
+      requestAnimationFrame(() => {
+        setAutoScroll(true);
+        dom.scrollTo(0, dom.scrollHeight);
+      });
+    }
+  }
+
+  // auto scroll
+  useEffect(() => {
+    if (autoScroll && !detach) {
+      scrollDomToBottom();
+    }
+  });
+
+  return {
+    scrollRef,
+    autoScroll,
+    setAutoScroll,
+    scrollDomToBottom,
+  };
+}
+
+function useSubmitHandler() {
+  const config = useAppConfig();
+  const submitKey = config.submitKey;
+  const isComposing = useRef(false);
+
+  useEffect(() => {
+    const onCompositionStart = () => {
+      isComposing.current = true;
+    };
+    const onCompositionEnd = () => {
+      isComposing.current = false;
+    };
+
+    window.addEventListener("compositionstart", onCompositionStart);
+    window.addEventListener("compositionend", onCompositionEnd);
+
+    return () => {
+      window.removeEventListener("compositionstart", onCompositionStart);
+      window.removeEventListener("compositionend", onCompositionEnd);
+    };
+  }, []);
+
+  const shouldSubmit = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Fix Chinese input method "Enter" on Safari
+    if (e.keyCode == 229) return false;
+    if (e.key !== "Enter") return false;
+    if (e.key === "Enter" && (e.nativeEvent.isComposing || isComposing.current))
+      return false;
+    return (
+      (config.submitKey === SubmitKey.AltEnter && e.altKey) ||
+      (config.submitKey === SubmitKey.CtrlEnter && e.ctrlKey) ||
+      (config.submitKey === SubmitKey.ShiftEnter && e.shiftKey) ||
+      (config.submitKey === SubmitKey.MetaEnter && e.metaKey) ||
+      (config.submitKey === SubmitKey.Enter &&
+        !e.altKey &&
+        !e.ctrlKey &&
+        !e.shiftKey &&
+        !e.metaKey)
+    );
+  };
+
+  return {
+    submitKey,
+    shouldSubmit,
+  };
+}
+
 function _Chat() {
+  type RenderMessage = ChatMessage & { preview?: boolean };
+  const navigate = useNavigate();
   const config = useAppConfig();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const clientConfig = useMemo(() => getClientConfig(), []);
   const isMobileScreen = useMobileScreen();
+  const chatStore = useChatStore();
+  const promptStore = usePromptStore();
+  const session = chatStore.currentSession();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isScrolledToBottom = scrollRef?.current
+    ? Math.abs(
+        scrollRef.current.scrollHeight -
+          (scrollRef.current.scrollTop + scrollRef.current.clientHeight)
+      ) <= 1
+    : false;
   const showMaxIcon = !isMobileScreen && !clientConfig?.isApp;
+  const context: RenderMessage[] = useMemo(() => {
+    return session.mask.hideContext ? [] : session.mask.context.slice();
+  }, [session.mask.context, session.mask.hideContext]);
+  const { setAutoScroll, scrollDomToBottom } = useScrollToBottom(
+    scrollRef,
+    isScrolledToBottom
+  );
 
   const [attachImages, setAttachImages] = useState<string[]>([]);
   const [promptHints, setPromptHints] = useState<RenderPrompt[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [userInput, setUserInput] = useState("");
+  const [hitBottom, setHitBottom] = useState(true);
+  const { submitKey, shouldSubmit } = useSubmitHandler();
+  // auto grow input
+  const [inputRows, setInputRows] = useState(2);
+
+  // preview messages
+  const renderMessages = useMemo(() => {
+    return context
+      .concat(session.messages as RenderMessage[])
+      .concat(
+        isLoading
+          ? [
+              {
+                ...createMessage({
+                  role: "assistant",
+                  content: "……",
+                }),
+                preview: true,
+              },
+            ]
+          : []
+      )
+      .concat(
+        userInput.length > 0 && config.sendPreviewBubble
+          ? [
+              {
+                ...createMessage({
+                  role: "user",
+                  content: userInput,
+                }),
+                preview: true,
+              },
+            ]
+          : []
+      );
+  }, [
+    config.sendPreviewBubble,
+    context,
+    isLoading,
+    session.messages,
+    userInput,
+  ]);
+
+  const [msgRenderIndex, _setMsgRenderIndex] = useState(
+    Math.max(0, renderMessages.length - CHAT_PAGE_SIZE)
+  );
 
   const onPromptSelect = (prompt: RenderPrompt) => {
     setTimeout(() => {
       setPromptHints([]);
     }, 30);
   };
+
+  async function uploadImage() {
+    const images: string[] = [];
+    images.push(...attachImages);
+
+    images.push(
+      ...(await new Promise<string[]>((res, rej) => {
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept =
+          "image/png, image/jpeg, image/webp, image/heic, image/heif";
+        fileInput.multiple = true;
+        fileInput.onchange = (event: any) => {
+          setUploading(true);
+          const files = event.target.files;
+          const imagesData: string[] = [];
+          for (let i = 0; i < files.length; i++) {
+            const file = event.target.files[i];
+            compressImage(file, 256 * 1024)
+              .then((dataUrl) => {
+                imagesData.push(dataUrl);
+                if (
+                  imagesData.length === 3 ||
+                  imagesData.length === files.length
+                ) {
+                  setUploading(false);
+                  res(imagesData);
+                }
+              })
+              .catch((e) => {
+                setUploading(false);
+                rej(e);
+              });
+          }
+        };
+        fileInput.click();
+      }))
+    );
+  }
+
+  function setMsgRenderIndex(newIndex: number) {
+    newIndex = Math.min(renderMessages.length - CHAT_PAGE_SIZE, newIndex);
+    newIndex = Math.max(0, newIndex);
+    _setMsgRenderIndex(newIndex);
+  }
+
+  function scrollToBottom() {
+    setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
+    scrollDomToBottom();
+  }
+
+  const onSearch = useDebouncedCallback(
+    (text: string) => {
+      const matchedPrompts = promptStore.search(text);
+      setPromptHints(matchedPrompts);
+    },
+    100,
+    { leading: true, trailing: true }
+  );
+
+  // chat commands shortcuts
+  const chatCommands = useChatCommand({
+    new: () => chatStore.newSession(),
+    newm: () => navigate(Path.NewChat),
+    prev: () => chatStore.nextSession(-1),
+    next: () => chatStore.nextSession(1),
+    clear: () =>
+      chatStore.updateCurrentSession(
+        (session) => (session.clearContextIndex = session.messages.length)
+      ),
+    del: () => chatStore.deleteSession(chatStore.currentSessionIndex),
+  });
+
+  const onInput = (text: string) => {
+    setUserInput(text);
+    const n = text.trim().length;
+
+    if (n === 0) {
+      setPromptHints([]);
+    } else if (text.startsWith(ChatCommandPrefix)) {
+      setPromptHints(chatCommands.search(text));
+    }
+  };
+
+  const doSubmit = (userInput: string) => {
+    if (userInput.trim() === "") return;
+    const matchCommand = chatCommands.match(userInput);
+    if (matchCommand.matched) {
+      setUserInput("");
+      setPromptHints([]);
+      matchCommand.invoke();
+      return;
+    }
+    setIsLoading(true);
+    chatStore
+      .onUserInput(userInput, attachImages)
+      .then(() => setIsLoading(false));
+    setAttachImages([]);
+    localStorage.setItem(LAST_INPUT_KEY, userInput);
+    setUserInput("");
+    setPromptHints([]);
+    if (!isMobileScreen) inputRef.current?.focus();
+    setAutoScroll(true);
+  };
+
+  // check if should send message
+  const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // if ArrowUp and no userInput, fill with last input
+    if (
+      e.key === "ArrowUp" &&
+      userInput.length <= 0 &&
+      !(e.metaKey || e.altKey || e.ctrlKey)
+    ) {
+      setUserInput(localStorage.getItem(LAST_INPUT_KEY) ?? "");
+      e.preventDefault();
+      return;
+    }
+    if (shouldSubmit(e) && promptHints.length === 0) {
+      doSubmit(userInput);
+      e.preventDefault();
+    }
+  };
+
+  const handlePaste = useCallback(
+    async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const currentModel = chatStore.currentSession().mask.modelConfig.model;
+      if (!isVisionModel(currentModel)) {
+        return;
+      }
+      const items = (event.clipboardData || window.clipboardData).items;
+      for (const item of items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          event.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            const images: string[] = [];
+            images.push(...attachImages);
+            images.push(
+              ...(await new Promise<string[]>((res, rej) => {
+                setUploading(true);
+                const imagesData: string[] = [];
+                compressImage(file, 256 * 1024)
+                  .then((dataUrl) => {
+                    imagesData.push(dataUrl);
+                    setUploading(false);
+                    res(imagesData);
+                  })
+                  .catch((e) => {
+                    setUploading(false);
+                    rej(e);
+                  });
+              }))
+            );
+            const imagesLength = images.length;
+
+            if (imagesLength > 3) {
+              images.splice(3, imagesLength - 3);
+            }
+            setAttachImages(images);
+          }
+        }
+      }
+    },
+    [attachImages, chatStore]
+  );
 
   return (
     <div className={styles.chat}>
@@ -353,7 +682,6 @@ function _Chat() {
             onClick={scrollToBottom}
             onPaste={handlePaste}
             rows={inputRows}
-            autoFocus={autoFocus}
             style={{
               fontSize: config.fontSize,
             }}

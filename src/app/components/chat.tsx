@@ -4,16 +4,63 @@ import RenameIcon from "../icons/rename.svg";
 import ExportIcon from "../icons/share.svg";
 import MaxIcon from "../icons/max.svg";
 import MinIcon from "../icons/min.svg";
+import DeleteIcon from "../icons/clear.svg";
+import SendWhiteIcon from "../icons/send-white.svg";
 import { useMobileScreen } from "../utils/utils";
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { getClientConfig } from "../config/client";
 import { useAppConfig } from "../store/configs";
+import { Prompt } from "../store/prompt";
+import { useNavigate } from "react-router-dom";
+import { useChatStore } from "../store/chat";
+
+export type RenderPrompt = Pick<Prompt, "title" | "content">;
+
+export function DeleteImageButton(props: { deleteImage: () => void }) {
+  return (
+    <div className={styles["delete-image"]} onClick={props.deleteImage}>
+      <DeleteIcon />
+    </div>
+  );
+}
+
+export function PromptHints(props: {
+  prompts: RenderPrompt[];
+  onPromptSelect: (prompt: RenderPrompt) => void;
+}) {
+  return <div>prompt</div>;
+}
+
+export function ChatActions(props: {
+  uploadImage: () => void;
+  setAttachImages: (images: string[]) => void;
+  setUploading: (uploading: boolean) => void;
+  showPromptModal: () => void;
+  scrollToBottom: () => void;
+  showPromptHints: () => void;
+  hitBottom: boolean;
+  uploading: boolean;
+}) {
+  const config = useAppConfig();
+  const navigate = useNavigate();
+  const chatStore = useChatStore();
+}
 
 function _Chat() {
   const config = useAppConfig();
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const clientConfig = useMemo(() => getClientConfig(), []);
   const isMobileScreen = useMobileScreen();
   const showMaxIcon = !isMobileScreen && !clientConfig?.isApp;
+
+  const [attachImages, setAttachImages] = useState<string[]>([]);
+  const [promptHints, setPromptHints] = useState<RenderPrompt[]>([]);
+
+  const onPromptSelect = (prompt: RenderPrompt) => {
+    setTimeout(() => {
+      setPromptHints([]);
+    }, 30);
+  };
 
   return (
     <div className={styles.chat}>
@@ -42,6 +89,86 @@ function _Chat() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className={styles["chat-input-panel"]}>
+        <PromptHints prompts={promptHints} onPromptSelect={onPromptSelect} />
+
+        <ChatActions
+          uploadImage={uploadImage}
+          setAttachImages={setAttachImages}
+          setUploading={setUploading}
+          showPromptModal={() => setShowPromptModal(true)}
+          scrollToBottom={scrollToBottom}
+          hitBottom={hitBottom}
+          uploading={uploading}
+          showPromptHints={() => {
+            // Click again to close
+            if (promptHints.length > 0) {
+              setPromptHints([]);
+              return;
+            }
+
+            inputRef.current?.focus();
+            setUserInput("/");
+            onSearch("");
+          }}
+        />
+        <label
+          className={`${styles["chat-input-panel-inner"]} ${
+            attachImages.length != 0
+              ? styles["chat-input-panel-inner-attach"]
+              : ""
+          }`}
+          htmlFor="chat-input"
+        >
+          <textarea
+            id="chat-input"
+            ref={inputRef}
+            className={styles["chat-input"]}
+            placeholder={Locale.Chat.Input(submitKey)}
+            onInput={(e) => onInput(e.currentTarget.value)}
+            value={userInput}
+            onKeyDown={onInputKeyDown}
+            onFocus={scrollToBottom}
+            onClick={scrollToBottom}
+            onPaste={handlePaste}
+            rows={inputRows}
+            autoFocus={autoFocus}
+            style={{
+              fontSize: config.fontSize,
+            }}
+          />
+          {attachImages.length != 0 && (
+            <div className={styles["attach-images"]}>
+              {attachImages.map((image, index) => {
+                return (
+                  <div
+                    key={index}
+                    className={styles["attach-image"]}
+                    style={{ backgroundImage: `url("${image}")` }}
+                  >
+                    <div className={styles["attach-image-mask"]}>
+                      <DeleteImageButton
+                        deleteImage={() => {
+                          setAttachImages(
+                            attachImages.filter((_, i) => i !== index)
+                          );
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <IconButton
+            icon={<SendWhiteIcon />}
+            text="发送"
+            className={styles["chat-input-send"]}
+            type="primary"
+          />
+        </label>
       </div>
     </div>
   );

@@ -17,6 +17,10 @@ export function Loading(props: { noLogo?: boolean }) {
   );
 }
 
+const Chat = dynamic(async () => (await import("./chat")).Chat, {
+  loading: () => <Loading noLogo />,
+});
+
 function Screen() {
   const isHome = location.pathname === Path.Home;
 
@@ -25,7 +29,7 @@ function Screen() {
       <>
         <SideBar className={isHome ? styles["sidebar-show"] : ""} />
 
-        <div className={styles["window-content"]} id={SlotID.AppBody}>
+        <div className={styles["window-content"]}>
           <Routes>
             <Route path={Path.Home} element={<Chat />} />
             <Route path={Path.Chat} element={<Chat />} />

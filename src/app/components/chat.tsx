@@ -640,7 +640,7 @@ function _Chat() {
       </div>
 
       <div className={styles["chat-input-panel"]}>
-        <PromptHints prompts={promptHints} onPromptSelect={onPromptSelect} />
+        {/* <PromptHints prompts={promptHints} onPromptSelect={onPromptSelect} /> */}
 
         <ChatActions
           uploadImage={uploadImage}

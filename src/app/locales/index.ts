@@ -8,7 +8,7 @@ const ALL_LANGS = {
 
 export type Lang = keyof typeof ALL_LANGS;
 const LANG_KEY = "lang";
-const DEFAULT_LANG = "en";
+const DEFAULT_LANG = "zh";
 
 export const AllLangs = Object.keys(ALL_LANGS) as Lang[];
 
@@ -46,7 +46,7 @@ export function getLang(): Lang {
   return DEFAULT_LANG;
 }
 
-const fallbackLang = en;
+const fallbackLang = zh;
 const targetLang = ALL_LANGS[getLang()] as LocaleType;
 
 export default fallbackLang as LocaleType;

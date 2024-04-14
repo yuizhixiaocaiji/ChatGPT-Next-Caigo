@@ -639,6 +639,17 @@ function _Chat() {
         </div>
       </div>
 
+      <div
+        className={styles["chat-body"]}
+        ref={scrollRef}
+        onScroll={(e) => onChatBodyScroll(e.currentTarget)}
+        onMouseDown={() => inputRef.current?.blur()}
+        onTouchStart={() => {
+          inputRef.current?.blur();
+          setAutoScroll(false);
+        }}
+      ></div>
+
       <div className={styles["chat-input-panel"]}>
         {/* <PromptHints prompts={promptHints} onPromptSelect={onPromptSelect} /> */}
 

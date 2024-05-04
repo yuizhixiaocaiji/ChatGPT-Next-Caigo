@@ -56,3 +56,7 @@ export function showToast(
 
   root.render(<Toast content={content} action={action} onClose={close} />);
 }
+
+export function showConfirm(content: any){
+  
+}

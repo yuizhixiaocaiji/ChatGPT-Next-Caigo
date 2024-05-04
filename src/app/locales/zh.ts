@@ -14,6 +14,10 @@ const zh = {
     Revert: "撤销",
   },
 
+  ChatItem: {
+    ChatItemCount: (count: number) => `${count} 条对话`,
+  },
+
   Chat: {
     SubTitle: (count: number) => `共 ${count} 条对话`,
     EditMessage: {

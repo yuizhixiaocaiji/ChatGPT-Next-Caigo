@@ -173,7 +173,7 @@ export function ChatActions(props: {
     const nextTheme = themes[nextIndex];
     config.update((config) => (config.theme = nextTheme));
   }
-  
+
   // 是否存在聊天请求
   const couldStop = ChatControllerPool.hasPending();
   // 停止所有的聊天请求
@@ -182,7 +182,8 @@ export function ChatActions(props: {
   //获取当前模型
   const currentModel = chatStore.currentSession().mask.modelConfig.model;
   const allModels = useAllModels();
-  
+
+  //获取当前可用模型
   const models = useMemo(
     () => allModels.filter((m) => m.available),
     [allModels]
@@ -190,6 +191,7 @@ export function ChatActions(props: {
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showUploadImage, setShowUploadImage] = useState(false);
   useEffect(() => {
+    // 判断当前模型是否支持图片上传
     const show = isVisionModel(currentModel);
     setShowUploadImage(show);
     if (!show) {
@@ -197,6 +199,7 @@ export function ChatActions(props: {
       props.setUploading(false);
     }
 
+    // 如果模型不可用 那么切换为下一个可用模型
     const isUnavailableModel = !models.some((m) => m.name === currentModel);
     if (isUnavailableModel && models.length > 0) {
       const nextModel = models[0].name as ModelType;
@@ -310,6 +313,12 @@ export function ChatActions(props: {
   );
 }
 
+/**
+ *
+ * @param scrollRef 当前带滚动轴的元素
+ * @param detach 是否已经到底
+ * @returns scrollRef 滚动元素 autoScroll 是否自动滚动 setAutoScroll 设置自动滚动 scrollDomToBottom 滚动到底部
+ */
 function useScrollToBottom(
   scrollRef: RefObject<HTMLDivElement>,
   detach: boolean = false
@@ -342,15 +351,19 @@ function useScrollToBottom(
   };
 }
 
+//提交对话handler
 function useSubmitHandler() {
   const config = useAppConfig();
+  //提交按键
   const submitKey = config.submitKey;
   const isComposing = useRef(false);
 
   useEffect(() => {
+    //拼音输入法开始触发
     const onCompositionStart = () => {
       isComposing.current = true;
     };
+    // 拼音输入法结束输入
     const onCompositionEnd = () => {
       isComposing.current = false;
     };
@@ -364,6 +377,7 @@ function useSubmitHandler() {
     };
   }, []);
 
+  // 快捷键提交校验
   const shouldSubmit = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Fix Chinese input method "Enter" on Safari
     if (e.keyCode == 229) return false;
@@ -389,6 +403,10 @@ function useSubmitHandler() {
   };
 }
 
+/**
+ * @description 聊天方法核心组件
+ * @returns
+ */
 function _Chat() {
   type RenderMessage = ChatMessage & { preview?: boolean };
   const navigate = useNavigate();
@@ -400,6 +418,7 @@ function _Chat() {
   const promptStore = usePromptStore();
   const session = chatStore.currentSession();
   const scrollRef = useRef<HTMLDivElement>(null);
+  //判断是否滚动到底部
   const isScrolledToBottom = scrollRef?.current
     ? Math.abs(
         scrollRef.current.scrollHeight -
@@ -474,6 +493,7 @@ function _Chat() {
     }, 30);
   };
 
+  // 图片上传方法
   async function uploadImage() {
     const images: string[] = [];
     images.push(...attachImages);
@@ -513,12 +533,14 @@ function _Chat() {
     );
   }
 
+  // 设置渲染消息索引
   function setMsgRenderIndex(newIndex: number) {
     newIndex = Math.min(renderMessages.length - CHAT_PAGE_SIZE, newIndex);
     newIndex = Math.max(0, newIndex);
     _setMsgRenderIndex(newIndex);
   }
 
+  //滚动方法
   function scrollToBottom() {
     setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
     scrollDomToBottom();
@@ -533,7 +555,7 @@ function _Chat() {
     { leading: true, trailing: true }
   );
 
-  // chat commands shortcuts
+  // 聊天命令快捷方式
   const chatCommands = useChatCommand({
     new: () => chatStore.newSession(),
     newm: () => navigate(Path.NewChat),
@@ -546,6 +568,7 @@ function _Chat() {
     del: () => chatStore.deleteSession(chatStore.currentSessionIndex),
   });
 
+  // 开始输入
   const onInput = (text: string) => {
     setUserInput(text);
     const n = text.trim().length;
@@ -557,6 +580,7 @@ function _Chat() {
     }
   };
 
+  // 提交消息
   const doSubmit = (userInput: string) => {
     if (userInput.trim() === "") return;
     const matchCommand = chatCommands.match(userInput);
@@ -578,9 +602,9 @@ function _Chat() {
     setAutoScroll(true);
   };
 
-  // check if should send message
+  // 检查是否可以发送消息
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // if ArrowUp and no userInput, fill with last input
+    // 如果点击 ArrowUp 并且没有用户输入, 将最后一次输入填充
     if (
       e.key === "ArrowUp" &&
       userInput.length <= 0 &&
@@ -596,6 +620,7 @@ function _Chat() {
     }
   };
 
+  // 粘贴事件监听
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
       const currentModel = chatStore.currentSession().mask.modelConfig.model;
@@ -638,6 +663,29 @@ function _Chat() {
     },
     [attachImages, chatStore]
   );
+
+  //滚动事件监听
+  const onChatBodyScroll = (e: HTMLElement) => {
+    const bottomHeight = e.scrollTop + e.clientHeight;
+    const edgeThreshold = e.clientHeight;
+
+    const isTouchTopEdge = e.scrollTop <= edgeThreshold;
+    const isTouchBottomEdge = bottomHeight >= e.scrollHeight - edgeThreshold;
+    const isHitBottom =
+      bottomHeight >= e.scrollHeight - (isMobileScreen ? 4 : 10);
+
+    const prevPageMsgIndex = msgRenderIndex - CHAT_PAGE_SIZE;
+    const nextPageMsgIndex = msgRenderIndex + CHAT_PAGE_SIZE;
+
+    if (isTouchTopEdge && !isTouchBottomEdge) {
+      setMsgRenderIndex(prevPageMsgIndex);
+    } else if (isTouchBottomEdge) {
+      setMsgRenderIndex(nextPageMsgIndex);
+    }
+
+    setHitBottom(isHitBottom);
+    setAutoScroll(isHitBottom);
+  };
 
   return (
     <div className={styles.chat}>

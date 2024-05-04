@@ -53,7 +53,7 @@ const zh = {
         dark: "深色模式",
       },
       Prompt: "快捷指令",
-      Masks: "来电思路",
+      Masks: "来点思路",
       Clear: "清除聊天",
       Settings: "对话设置",
       UploadImage: "上传图片",

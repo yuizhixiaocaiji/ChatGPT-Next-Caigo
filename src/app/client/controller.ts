@@ -1,4 +1,4 @@
-// To store message streaming controller
+// 存储消息流控制器
 export const ChatControllerPool = {
   controllers: {} as Record<string, AbortController>,
 

@@ -1,3 +1,8 @@
+/**
+ * @name access
+ * @description 渠道描述工具
+ */
+
 import {
   ApiPath,
   DEFAULT_API_HOST,

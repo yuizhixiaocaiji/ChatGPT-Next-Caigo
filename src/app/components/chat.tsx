@@ -60,6 +60,11 @@ declare global {
 
 export type RenderPrompt = Pick<Prompt, "title" | "content">;
 
+/**
+ * 
+ * @param props 删除函数
+ * @returns 
+ */
 export function DeleteImageButton(props: { deleteImage: () => void }) {
   return (
     <div className={styles["delete-image"]} onClick={props.deleteImage}>
@@ -68,6 +73,11 @@ export function DeleteImageButton(props: { deleteImage: () => void }) {
   );
 }
 
+/**
+ * @description 聊天动作操作按钮
+ * @param props text按钮文字 icon实例 onClick点击事件
+ * @returns 返回按钮实例
+ */
 function ChatAction(props: {
   text: string;
   icon: JSX.Element;
@@ -80,6 +90,10 @@ function ChatAction(props: {
     icon: 16,
   });
 
+  /**
+   * 
+   * @description 获取更新宽度
+   */
   function updateWidth() {
     if (!iconRef.current || !textRef.current) return;
     const getWidth = (dom: HTMLDivElement) => dom.getBoundingClientRect().width;
@@ -117,6 +131,11 @@ function ChatAction(props: {
   );
 }
 
+/**
+ * @description 聊天输入框
+ * @param props 
+ * @returns 
+ */
 export function PromptHints(props: {
   prompts: RenderPrompt[];
   onPromptSelect: (prompt: RenderPrompt) => void;
@@ -124,6 +143,11 @@ export function PromptHints(props: {
   return <div>prompt</div>;
 }
 
+/**
+ * @description 聊天核心组件——底部组件
+ * @param props uploadImage上传图片函数 setAttachImages设置图片函数 setUploading设置上传状态 showPromptModal显示提示框 scrollToBottom滚动到底部 showPromptHints显示提示框 hitBottom是否到底部 uploading是否上传中
+ * @returns 
+ */
 export function ChatActions(props: {
   uploadImage: () => void;
   setAttachImages: (images: string[]) => void;
@@ -138,9 +162,10 @@ export function ChatActions(props: {
   const navigate = useNavigate();
   const chatStore = useChatStore();
 
-  // switch themes
+  // 主题初始化
   const theme = config.theme;
 
+  // 切换主题
   function nextTheme() {
     const themes = [Theme.Auto, Theme.Light, Theme.Dark];
     const themeIndex = themes.indexOf(theme);
@@ -148,12 +173,16 @@ export function ChatActions(props: {
     const nextTheme = themes[nextIndex];
     config.update((config) => (config.theme = nextTheme));
   }
-  // stop all responses
+  
+  // 是否存在聊天请求
   const couldStop = ChatControllerPool.hasPending();
+  // 停止所有的聊天请求
   const stopAll = () => ChatControllerPool.stopAll();
 
+  //获取当前模型
   const currentModel = chatStore.currentSession().mask.modelConfig.model;
   const allModels = useAllModels();
+  
   const models = useMemo(
     () => allModels.filter((m) => m.available),
     [allModels]
@@ -176,7 +205,7 @@ export function ChatActions(props: {
       );
       showToast(nextModel);
     }
-  }, [chatStore, currentModel, models]);
+  }, [chatStore, currentModel, models, props]);
   return (
     <div className={styles["chat-input-actions"]}>
       {couldStop && (

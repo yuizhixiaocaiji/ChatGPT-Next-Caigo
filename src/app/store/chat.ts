@@ -36,6 +36,7 @@ export interface ChatSession {
 
 export const DEFAULT_TOPIC = Locale.Store.DefaultTopic;
 function createEmptySession(): ChatSession {
+  console.log("开始创建全新的会话");
   return {
     id: nanoid(),
     topic: DEFAULT_TOPIC,

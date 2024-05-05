@@ -1,5 +1,6 @@
 "use client";
 
+require("../polyfill");
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import styles from "./home.module.scss";
 import { Path } from "../constant";

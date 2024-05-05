@@ -15,9 +15,13 @@ import {
 import { Link } from "react-router-dom";
 import SettingsIcon from "../icons/settings.svg";
 import GithubIcon from "../icons/github.svg";
-import { ChatList } from "./chat-list";
 import { useAppConfig } from "../store";
 import { useMobileScreen } from "../utils/utils";
+import dynamic from "next/dynamic";
+
+const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
+  loading: () => null,
+});
 
 function useDragSideBar() {
   const limit = (x: number) => Math.min(MAX_SIDEBAR_WIDTH, x);

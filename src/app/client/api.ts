@@ -1,7 +1,12 @@
 import { getClientConfig } from "../config/client";
-import { ACCESS_CODE_PREFIX, ServiceProvider } from "../constant";
+import {
+  ACCESS_CODE_PREFIX,
+  ModelProvider,
+  ServiceProvider,
+} from "../constant";
 import { useAccessStore } from "../store/access";
-import { useChatStore } from "../store/chat";
+import { ChatMessage, useChatStore } from "../store/chat";
+import { ChatGPTApi } from "./platforms/openai";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -9,6 +14,11 @@ export interface LLMModelProvider {
   id: string;
   providerName: string;
   providerType: string;
+}
+
+export interface LLMUsage {
+  used: number;
+  total: number;
 }
 
 export interface MultimodalContent {
@@ -25,10 +35,60 @@ export interface LLMModel {
   provider: LLMModelProvider;
 }
 
+export interface LLMConfig {
+  model: string;
+  temperature?: number;
+  top_p?: number;
+  stream?: boolean;
+  presence_penalty?: number;
+  frequency_penalty?: number;
+}
+
+export interface ChatOptions {
+  messages: RequestMessage[];
+  config: LLMConfig;
+
+  onUpdate?: (message: string, chunk: string) => void;
+  onFinish: (message: string) => void;
+  onError?: (err: Error) => void;
+  onController?: (controller: AbortController) => void;
+}
+
+export abstract class LLMApi {
+  abstract chat(options: ChatOptions): Promise<void>;
+  abstract usage(): Promise<LLMUsage>;
+  abstract models(): Promise<LLMModel[]>;
+}
+
 export interface RequestMessage {
   role: MessageRole;
   content: string | MultimodalContent[];
 }
+
+export class ClientApi {
+  public llm: LLMApi;
+
+  constructor(provider: ModelProvider = ModelProvider.GPT) {
+    // switch (provider) {
+    //   case ModelProvider.GeminiPro:
+    //     this.llm = new GeminiProApi();
+    //     break;
+    //   case ModelProvider.Claude:
+    //     this.llm = new ClaudeApi();
+    //     break;
+    //   default:
+    //     this.llm = new ChatGPTApi();
+    // }
+    this.llm = new ChatGPTApi();
+  }
+
+  config() {}
+
+  prompts() {}
+
+  masks() {}
+}
+
 export function getHeaders() {
   const accessStore = useAccessStore.getState();
   const headers: Record<string, string> = {

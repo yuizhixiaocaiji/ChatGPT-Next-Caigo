@@ -299,6 +299,19 @@ export const KnowledgeCutOffDate: Record<string, string> = {
   "gemini-pro": "2023-12",
 };
 
+export const OpenaiPath = {
+  ChatPath: "v1/chat/completions",
+  UsagePath: "dashboard/billing/usage",
+  SubsPath: "dashboard/billing/subscription",
+  ListModelPath: "v1/models",
+};
+
+export enum ModelProvider {
+  GPT = "GPT",
+  GeminiPro = "GeminiPro",
+  Claude = "Claude",
+}
+
 export enum ApiPath {
   Cors = "",
   OpenAI = "/api/openai",

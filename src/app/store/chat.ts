@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import { createPersistStore } from "../utils/store";
-import { MultimodalContent, RequestMessage } from "../client/api";
+import { ClientApi, MultimodalContent, RequestMessage } from "../client/api";
 import { ModelConfig, ModelType, useAppConfig } from "./configs";
 import { Mask, createEmptyMask } from "./mask";
 import Locale, { getLang } from "../locales";
@@ -341,6 +341,8 @@ export const useChatStore = createPersistStore(
           botMessage,
         ]);
       });
+
+      let api: ClientApi;
     },
 
     newSession(mask?: Mask) {

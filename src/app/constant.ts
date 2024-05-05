@@ -21,6 +21,8 @@ export const MAX_SIDEBAR_WIDTH = 500;
 export const MIN_SIDEBAR_WIDTH = 230;
 export const NARROW_SIDEBAR_WIDTH = 100;
 
+export const REQUEST_TIMEOUT_MS = 60000;
+
 export const OWNER = "yuizhixiaocaiji";
 export const REPO = "ChatGPT-Next-Caigo";
 export const REPO_URL = `https://github.com/${OWNER}/${REPO}`;

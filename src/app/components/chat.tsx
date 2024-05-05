@@ -42,14 +42,25 @@ import { getClientConfig } from "../config/client";
 import { ModelType, SubmitKey, Theme, useAppConfig } from "../store/configs";
 import { Prompt, usePromptStore } from "../store/prompt";
 import { useNavigate } from "react-router-dom";
-import { ChatMessage, useChatStore, createMessage } from "../store/chat";
+import {
+  ChatMessage,
+  useChatStore,
+  createMessage,
+  DEFAULT_TOPIC,
+} from "../store/chat";
 import { ChatControllerPool } from "../client/controller";
 import { useAllModels } from "../utils/hooks";
 import { showToast } from "./ui-lib";
 import Locale from "../locales";
-import { CHAT_PAGE_SIZE, LAST_INPUT_KEY, Path } from "../constant";
+import {
+  CHAT_PAGE_SIZE,
+  LAST_INPUT_KEY,
+  Path,
+  REQUEST_TIMEOUT_MS,
+} from "../constant";
 import { useDebouncedCallback } from "use-debounce";
 import { ChatCommandPrefix, useChatCommand } from "../command";
+import { prettyObject } from "../utils/format";
 
 declare global {
   interface Window {
@@ -61,9 +72,9 @@ declare global {
 export type RenderPrompt = Pick<Prompt, "title" | "content">;
 
 /**
- * 
+ *
  * @param props 删除函数
- * @returns 
+ * @returns
  */
 export function DeleteImageButton(props: { deleteImage: () => void }) {
   return (
@@ -91,7 +102,7 @@ function ChatAction(props: {
   });
 
   /**
-   * 
+   *
    * @description 获取更新宽度
    */
   function updateWidth() {
@@ -133,8 +144,8 @@ function ChatAction(props: {
 
 /**
  * @description 聊天输入框
- * @param props 
- * @returns 
+ * @param props
+ * @returns
  */
 export function PromptHints(props: {
   prompts: RenderPrompt[];
@@ -146,7 +157,7 @@ export function PromptHints(props: {
 /**
  * @description 聊天核心组件——底部组件
  * @param props uploadImage上传图片函数 setAttachImages设置图片函数 setUploading设置上传状态 showPromptModal显示提示框 scrollToBottom滚动到底部 showPromptHints显示提示框 hitBottom是否到底部 uploading是否上传中
- * @returns 
+ * @returns
  */
 export function ChatActions(props: {
   uploadImage: () => void;
@@ -208,6 +219,7 @@ export function ChatActions(props: {
       );
       showToast(nextModel);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatStore, currentModel, models]);
   return (
     <div className={styles["chat-input-actions"]}>
@@ -620,6 +632,40 @@ function _Chat() {
     }
   };
 
+  // 停止当前消息
+  const onUserStop = (messageId: string) => {
+    ChatControllerPool.stop(session.id, messageId);
+  };
+
+  useEffect(() => {
+    chatStore.updateCurrentSession((session) => {
+      const stopTiming = Date.now() - REQUEST_TIMEOUT_MS;
+      session.messages.forEach((m) => {
+        // check if should stop all stale messages
+        if (m.isError || new Date(m.date).getTime() < stopTiming) {
+          if (m.streaming) {
+            m.streaming = false;
+          }
+
+          if (m.content.length === 0) {
+            m.isError = true;
+            m.content = prettyObject({
+              error: true,
+              message: "empty response",
+            });
+          }
+        }
+      });
+
+      // auto sync mask config from global config
+      if (session.mask.syncGlobalConfig) {
+        console.log("[Mask] syncing from global, name = ", session.mask.name);
+        session.mask.modelConfig = { ...config.modelConfig };
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 粘贴事件监听
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -694,9 +740,11 @@ function _Chat() {
           <div
             className={`window-header-main-title ${styles["chat-body-main-title"]}`}
           >
-            新的聊天
+            {!session.topic ? DEFAULT_TOPIC : session.topic}
           </div>
-          <div className="window-header-sub-title">共0条对话</div>
+          <div className="window-header-sub-title">
+            {Locale.Chat.SubTitle(session.messages.length)}
+          </div>
         </div>
         <div className="window-actions">
           <div className="window-action-button">

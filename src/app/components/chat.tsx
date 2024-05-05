@@ -1188,6 +1188,7 @@ function _Chat() {
             text="发送"
             className={styles["chat-input-send"]}
             type="primary"
+            onClick={() => doSubmit(userInput)}
           />
         </label>
       </div>

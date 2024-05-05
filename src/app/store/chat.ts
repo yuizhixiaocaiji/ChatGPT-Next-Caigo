@@ -1,11 +1,19 @@
 import { nanoid } from "nanoid";
 import { createPersistStore } from "../utils/store";
-import { RequestMessage } from "../client/api";
+import { MultimodalContent, RequestMessage } from "../client/api";
 import { ModelConfig, ModelType, useAppConfig } from "./configs";
 import { Mask, createEmptyMask } from "./mask";
 import Locale, { getLang } from "../locales";
 import { showToast } from "../components/ui-lib";
-import { DEFAULT_INPUT_TEMPLATE, DEFAULT_MODELS, KnowledgeCutOffDate, StoreKey } from "../constant";
+import {
+  DEFAULT_INPUT_TEMPLATE,
+  DEFAULT_MODELS,
+  DEFAULT_SYSTEM_TEMPLATE,
+  KnowledgeCutOffDate,
+  StoreKey,
+} from "../constant";
+import { estimateTokenLength } from "../utils/token";
+import { getMessageTextContent } from "../utils/utils";
 export type ChatMessage = RequestMessage & {
   date: string;
   streaming?: boolean;
@@ -180,10 +188,159 @@ export const useChatStore = createPersistStore(
       return session;
     },
 
+    getMemoryPrompt() {
+      const session = this.currentSession();
+
+      return {
+        role: "system",
+        content:
+          session.memoryPrompt.length > 0
+            ? Locale.Store.Prompt.History(session.memoryPrompt)
+            : "",
+        date: "",
+      } as ChatMessage;
+    },
+
+    getMessagesWithMemory() {
+      const session = this.currentSession();
+      const modelConfig = session.mask.modelConfig;
+      const clearContextIndex = session.clearContextIndex ?? 0;
+      const messages = session.messages.slice();
+      const totalMessageCount = session.messages.length;
+
+      // in-context prompts
+      const contextPrompts = session.mask.context.slice();
+
+      // system prompts, to get close to OpenAI Web ChatGPT
+      const shouldInjectSystemPrompts =
+        modelConfig.enableInjectSystemPrompts &&
+        session.mask.modelConfig.model.startsWith("gpt-");
+
+      var systemPrompts: ChatMessage[] = [];
+      systemPrompts = shouldInjectSystemPrompts
+        ? [
+            createMessage({
+              role: "system",
+              content: fillTemplateWith("", {
+                ...modelConfig,
+                template: DEFAULT_SYSTEM_TEMPLATE,
+              }),
+            }),
+          ]
+        : [];
+      if (shouldInjectSystemPrompts) {
+        console.log(
+          "[Global System Prompt] ",
+          systemPrompts.at(0)?.content ?? "empty"
+        );
+      }
+
+      // long term memory
+      const shouldSendLongTermMemory =
+        modelConfig.sendMemory &&
+        session.memoryPrompt &&
+        session.memoryPrompt.length > 0 &&
+        session.lastSummarizeIndex > clearContextIndex;
+      const longTermMemoryPrompts = shouldSendLongTermMemory
+        ? [this.getMemoryPrompt()]
+        : [];
+      const longTermMemoryStartIndex = session.lastSummarizeIndex;
+
+      // short term memory
+      const shortTermMemoryStartIndex = Math.max(
+        0,
+        totalMessageCount - modelConfig.historyMessageCount
+      );
+
+      // lets concat send messages, including 4 parts:
+      // 0. system prompt: to get close to OpenAI Web ChatGPT
+      // 1. long term memory: summarized memory messages
+      // 2. pre-defined in-context prompts
+      // 3. short term memory: latest n messages
+      // 4. newest input message
+      const memoryStartIndex = shouldSendLongTermMemory
+        ? Math.min(longTermMemoryStartIndex, shortTermMemoryStartIndex)
+        : shortTermMemoryStartIndex;
+      // and if user has cleared history messages, we should exclude the memory too.
+      const contextStartIndex = Math.max(clearContextIndex, memoryStartIndex);
+      const maxTokenThreshold = modelConfig.max_tokens;
+
+      // get recent messages as much as possible
+      const reversedRecentMessages = [];
+      for (
+        let i = totalMessageCount - 1, tokenCount = 0;
+        i >= contextStartIndex && tokenCount < maxTokenThreshold;
+        i -= 1
+      ) {
+        const msg = messages[i];
+        if (!msg || msg.isError) continue;
+        tokenCount += estimateTokenLength(getMessageTextContent(msg));
+        reversedRecentMessages.push(msg);
+      }
+      // concat all messages
+      const recentMessages = [
+        ...systemPrompts,
+        ...longTermMemoryPrompts,
+        ...contextPrompts,
+        ...reversedRecentMessages.reverse(),
+      ];
+
+      return recentMessages;
+    },
+
     async onUserInput(content: string, attachImages?: string[]) {
       const session = this.currentSession();
       const modelConfig = session.mask.modelConfig;
       const userContent = fillTemplateWith(content, modelConfig);
+      console.log("[User Input] after template: ", userContent);
+
+      let mContent: string | MultimodalContent[] = userContent;
+
+      if (attachImages && attachImages.length > 0) {
+        mContent = [
+          {
+            type: "text",
+            text: userContent,
+          },
+        ];
+        mContent = mContent.concat(
+          attachImages.map((url) => {
+            return {
+              type: "image_url",
+              image_url: {
+                url: url,
+              },
+            };
+          })
+        );
+      }
+      let userMessage: ChatMessage = createMessage({
+        role: "user",
+        content: mContent,
+      });
+
+      const botMessage: ChatMessage = createMessage({
+        role: "assistant",
+        streaming: true,
+        model: modelConfig.model,
+      });
+
+      // 获取最新消息
+      const recentMessages = this.getMessagesWithMemory();
+      const sendMessages = recentMessages.concat(userMessage);
+      const messageIndex = this.currentSession().messages.length + 1;
+
+      // 保存用戶和机器人的消息
+      this.updateCurrentSession((session) => {
+        const savedUserMessage = {
+          ...userMessage,
+          content: mContent,
+        };
+        session.messages = session.messages.concat([
+          savedUserMessage,
+          botMessage,
+        ]);
+      });
     },
 
     newSession(mask?: Mask) {

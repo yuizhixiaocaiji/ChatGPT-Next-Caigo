@@ -50,3 +50,14 @@ const fallbackLang = zh;
 const targetLang = ALL_LANGS[getLang()] as LocaleType;
 
 export default fallbackLang as LocaleType;
+
+export function getISOLang() {
+  const isoLangString: Record<string, string> = {
+    cn: "zh-Hans",
+    tw: "zh-Hant",
+  };
+
+  const lang = getLang();
+  return isoLangString[lang] ?? lang;
+}
+

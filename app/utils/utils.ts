@@ -160,3 +160,7 @@ export function selectOrCopy(el: HTMLElement, content: string) {
 
   return true;
 }
+
+export function getCSSVar(varName: string) {
+  return getComputedStyle(document.body).getPropertyValue(varName).trim();
+}

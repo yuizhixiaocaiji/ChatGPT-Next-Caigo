@@ -31,9 +31,11 @@ import StopIcon from "../icons/pause.svg";
 import RobotIcon from "../icons/robot.svg";
 import {
   compressImage,
+  copyToClipboard,
   getMessageImages,
   getMessageTextContent,
   isVisionModel,
+  selectOrCopy,
   useMobileScreen,
 } from "../utils/utils";
 import {
@@ -72,6 +74,8 @@ import { prettyObject } from "../utils/format";
 import { useAccessStore } from "../store";
 import { MultimodalContent } from "../client/api";
 import { Avatar } from "./emoji";
+import { MaskAvatar } from "./mask";
+import dynamic from "next/dynamic";
 
 declare global {
   interface Window {
@@ -79,6 +83,10 @@ declare global {
     [key: string]: any;
   }
 }
+
+const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
+  loading: () => <LoadingIcon />,
+});
 
 export type RenderPrompt = Pick<Prompt, "title" | "content">;
 
@@ -426,6 +434,26 @@ function useSubmitHandler() {
   };
 }
 
+function ClearContextDivider() {
+  const chatStore = useChatStore();
+
+  return (
+    <div
+      className={styles["clear-context"]}
+      onClick={() =>
+        chatStore.updateCurrentSession(
+          (session) => (session.clearContextIndex = undefined)
+        )
+      }
+    >
+      <div className={styles["clear-context-tips"]}>{Locale.Context.Clear}</div>
+      <div className={styles["clear-context-revert-btn"]}>
+        {Locale.Context.Revert}
+      </div>
+    </div>
+  );
+}
+
 /**
  * @description 聊天方法核心组件
  * @returns
@@ -442,6 +470,7 @@ function _Chat() {
   const accessStore = useAccessStore();
   const session = chatStore.currentSession();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fontSize = config.fontSize;
   //判断是否滚动到底部
   const isScrolledToBottom = scrollRef?.current
     ? Math.abs(
@@ -671,6 +700,97 @@ function _Chat() {
   // 停止当前消息
   const onUserStop = (messageId: string) => {
     ChatControllerPool.stop(session.id, messageId);
+  };
+
+  const deleteMessage = (msgId?: string) => {
+    chatStore.updateCurrentSession(
+      (session) =>
+        (session.messages = session.messages.filter((m) => m.id !== msgId))
+    );
+  };
+
+  const onDelete = (msgId: string) => {
+    deleteMessage(msgId);
+  };
+
+  const onResend = (message: ChatMessage) => {
+    // 什么时候重新发送消息
+    // 1. 对于用户的消息，查找下一条机器人的响应
+    // 2. 机器人的消息，则查找最后一条用户的消息
+    // 3. 删除原始的机器人和用户的消息
+    // 4. 重新发送用户的输入
+
+    const resendingIndex = session.messages.findIndex(
+      (m) => m.id === message.id
+    );
+
+    if (resendingIndex < 0 || resendingIndex >= session.messages.length) {
+      console.error("[Chat] failed to find resending message", message);
+      return;
+    }
+
+    let userMessage: ChatMessage | undefined;
+    let botMessage: ChatMessage | undefined;
+
+    if (message.role === "assistant") {
+      // if it is resending a bot's message, find the user input for it
+      botMessage = message;
+      for (let i = resendingIndex; i >= 0; i -= 1) {
+        if (session.messages[i].role === "user") {
+          userMessage = session.messages[i];
+          break;
+        }
+      }
+    } else if (message.role === "user") {
+      // if it is resending a user's input, find the bot's response
+      userMessage = message;
+      for (let i = resendingIndex; i < session.messages.length; i += 1) {
+        if (session.messages[i].role === "assistant") {
+          botMessage = session.messages[i];
+          break;
+        }
+      }
+    }
+
+    if (userMessage === undefined) {
+      console.error("[Chat] failed to resend", message);
+      return;
+    }
+
+    // delete the original messages
+    deleteMessage(userMessage.id);
+    deleteMessage(botMessage?.id);
+
+    // resend the message
+    setIsLoading(true);
+    const textContent = getMessageTextContent(userMessage);
+    const images = getMessageImages(userMessage);
+    chatStore.onUserInput(textContent, images).then(() => setIsLoading(false));
+    inputRef.current?.focus();
+  };
+
+  const onPinMessage = (message: ChatMessage) => {
+    chatStore.updateCurrentSession((session) =>
+      session.mask.context.push(message)
+    );
+
+    showToast(Locale.Chat.Actions.PinToastContent, {
+      text: Locale.Chat.Actions.PinToastAction,
+      onClick: () => {
+        setShowPromptModal(true);
+      },
+    });
+  };
+
+  const onRightClick = (e: any, message: ChatMessage) => {
+    // copy to clipboard
+    if (selectOrCopy(e.currentTarget, getMessageTextContent(message))) {
+      if (userInput.length === 0) {
+        setUserInput(getMessageTextContent(message));
+      }
+
+      e.preventDefault();
+    }
   };
 
   useEffect(() => {

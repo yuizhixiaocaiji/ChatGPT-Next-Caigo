@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { RequestMessage } from "../client/api";
+import Locale from "../locales";
+import { showToast } from "../components/ui-lib";
 
 export function useWindowSize() {
   const [size, setSize] = useState({
@@ -108,4 +110,41 @@ export function getMessageImages(message: RequestMessage): string[] {
     }
   }
   return urls;
+}
+
+export async function copyToClipboard(text: string) {
+  try {
+    if (window.__TAURI__) {
+      window.__TAURI__.writeText(text);
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+
+    showToast(Locale.Copy.Success);
+  } catch (error) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand("copy");
+      showToast(Locale.Copy.Success);
+    } catch (error) {
+      showToast(Locale.Copy.Failed);
+    }
+    document.body.removeChild(textArea);
+  }
+}
+
+export function selectOrCopy(el: HTMLElement, content: string) {
+  const currentSelection = window.getSelection();
+
+  if (currentSelection?.type === "Range") {
+    return false;
+  }
+
+  copyToClipboard(content);
+
+  return true;
 }

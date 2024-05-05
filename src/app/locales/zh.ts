@@ -21,6 +21,44 @@ const zh = {
     Later: "稍后再说",
   },
 
+  Copy: {
+    Success: "已写入剪切板",
+    Failed: "复制失败，请赋予剪切板权限",
+  },
+
+  Export: {
+    Title: "分享聊天记录",
+    Copy: "全部复制",
+    Download: "下载文件",
+    Share: "分享到 ShareGPT",
+    MessageFromYou: "用户",
+    MessageFromChatGPT: "ChatGPT",
+    Format: {
+      Title: "导出格式",
+      SubTitle: "可以导出 Markdown 文本或者 PNG 图片",
+    },
+    IncludeContext: {
+      Title: "包含面具上下文",
+      SubTitle: "是否在消息中展示面具上下文",
+    },
+    Steps: {
+      Select: "选取",
+      Preview: "预览",
+    },
+    Image: {
+      Toast: "正在生成截图",
+      Modal: "长按或右键保存图片",
+    },
+  },
+
+  Context: {
+    Toast: (x: any) => `包含 ${x} 条预设提示词`,
+    Edit: "当前对话设置",
+    Add: "新增一条对话",
+    Clear: "上下文已清除",
+    Revert: "恢复上下文",
+  },
+
   Store: {
     DefaultTopic: "新的聊天",
     BotHello: "有什么可以帮你的吗",

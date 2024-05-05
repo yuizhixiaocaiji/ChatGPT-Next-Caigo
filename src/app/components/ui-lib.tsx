@@ -260,3 +260,41 @@ export function showPrompt(content: any, value = "", rows = 3) {
     );
   });
 }
+
+export function showModal(props: ModalProps) {
+  const div = document.createElement("div");
+  div.className = "modal-mask";
+  document.body.appendChild(div);
+
+  const root = createRoot(div);
+  const closeModal = () => {
+    props.onClose?.();
+    root.unmount();
+    div.remove();
+  };
+
+  div.onclick = (e) => {
+    if (e.target === div) {
+      closeModal();
+    }
+  };
+
+  root.render(<Modal {...props} onClose={closeModal}></Modal>);
+}
+
+export function showImageModal(img: string) {
+  showModal({
+    title: Locale.Export.Image.Modal,
+    children: (
+      <div>
+        <img
+          src={img}
+          alt="preview"
+          style={{
+            maxWidth: "100%",
+          }}
+        ></img>
+      </div>
+    ),
+  });
+}

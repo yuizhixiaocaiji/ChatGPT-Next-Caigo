@@ -7,6 +7,8 @@ import { SideBar } from "./sideBar";
 import dynamic from "next/dynamic";
 import BotIcon from "../icons/bot.svg";
 import LoadingIcon from "../icons/three-dots.svg";
+import { getClientConfig } from "../config/client";
+import { useEffect } from "react";
 
 export function Loading(props: { noLogo?: boolean }) {
   return (
@@ -21,9 +23,27 @@ const Chat = dynamic(async () => (await import("./chat")).Chat, {
   loading: () => <Loading noLogo />,
 });
 
+const loadAsyncGoogleFont = () => {
+  const linkEl = document.createElement("link");
+  const proxyFontUrl = "/google-fonts";
+  const remoteFontUrl = "https://fonts.googleapis.com";
+  const googleFontUrl =
+    getClientConfig()?.buildMode === "export" ? remoteFontUrl : proxyFontUrl;
+  linkEl.rel = "stylesheet";
+  linkEl.href =
+    googleFontUrl +
+    "/css2?family=" +
+    encodeURIComponent("Noto Sans:wght@300;400;700;900") +
+    "&display=swap";
+  document.head.appendChild(linkEl);
+};
+
 function Screen() {
   const isHome = location.pathname === Path.Home;
 
+  useEffect(() => {
+    loadAsyncGoogleFont();
+  }, []);
   return (
     <div className={styles.container}>
       <>

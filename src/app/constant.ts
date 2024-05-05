@@ -324,6 +324,7 @@ export enum ServiceProvider {
   Anthropic = "Anthropic",
 }
 export const DEFAULT_API_HOST = "https://api.nextchat.dev";
+export const OPENAI_BASE_URL = "https://api.openai.com";
 
 export const SUMMARIZE_MODEL = "gpt-3.5-turbo";
 export const GEMINI_SUMMARIZE_MODEL = "gemini-pro";

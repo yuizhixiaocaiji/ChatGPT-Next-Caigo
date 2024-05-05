@@ -35,6 +35,10 @@ export interface ChatSession {
 }
 
 export const DEFAULT_TOPIC = Locale.Store.DefaultTopic;
+export const BOT_HELLO: ChatMessage = createMessage({
+  role: "assistant",
+  content: Locale.Store.BotHello,
+});
 function createEmptySession(): ChatSession {
   console.log("开始创建全新的会话");
   return {

@@ -14,6 +14,7 @@ import { useEffect, useRef } from "react";
 import { Path } from "../constant";
 import Locale from "../locales";
 import { MaskAvatar } from "./mask";
+import { showConfirm } from "./ui-lib";
 
 export function ChatItem(props: {
   onClick?: () => void;

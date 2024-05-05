@@ -78,6 +78,17 @@ const zh = {
     },
     IsContext: "预设提示词",
   },
+  UI: {
+    Confirm: "确认",
+    Cancel: "取消",
+    Close: "关闭",
+    Create: "新建",
+    Edit: "编辑",
+    Export: "导出",
+    Import: "导入",
+    Sync: "同步",
+    Config: "配置",
+  },
 };
 
 export default zh;

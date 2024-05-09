@@ -116,12 +116,6 @@ export function SideBar(props: { className?: string }) {
 
       <div className={styles["sidebar-header-bar"]}>
         <IconButton
-          icon={<MaskIcon />}
-          text="来点思路"
-          className={styles["sidebar-bar-button"]}
-          shadow
-        />
-        <IconButton
           icon={<AddIcon />}
           text="新的聊天"
           className={styles["sidebar-bar-button"]}

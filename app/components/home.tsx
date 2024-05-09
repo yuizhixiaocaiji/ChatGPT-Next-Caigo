@@ -17,7 +17,7 @@ import { ModelProvider, Path, SlotID } from "../constant";
 import { getISOLang } from "../locales";
 
 import {
-  HashRouter as Router,
+  BrowserRouter as Router,
   Routes,
   Route,
   useLocation,

@@ -12,7 +12,7 @@ import {
   Path,
   REPO_URL,
 } from "../constant";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import SettingsIcon from "../icons/settings.svg";
 import GithubIcon from "../icons/github.svg";
 import { useAppConfig } from "../store";
@@ -99,6 +99,7 @@ function useDragSideBar() {
 
 export function SideBar(props: { className?: string }) {
   const { onDragStart, shouldNarrow } = useDragSideBar();
+  const navigate = useNavigate();
 
   return (
     <div className={`${styles.sidebar} ${props.className}`}>
@@ -119,6 +120,7 @@ export function SideBar(props: { className?: string }) {
           icon={<AddIcon />}
           text="新的聊天"
           className={styles["sidebar-bar-button"]}
+          onClick={() => navigate(Path.NewChat)}
           shadow
         />
       </div>

@@ -1,11 +1,11 @@
 import { getClientConfig } from "../config/client";
 import { SubmitKey } from "../store/configs";
 
-export type LocaleType = typeof zh;
+export type LocaleType = typeof cn;
 
 const isApp = !!getClientConfig()?.isApp;
 
-const zh = {
+const cn = {
   WIP: "该功能仍在开发中……",
   Error: {
     Unauthorized: isApp
@@ -165,4 +165,4 @@ const zh = {
   },
 };
 
-export default zh;
+export default cn;

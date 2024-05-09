@@ -1,14 +1,14 @@
 import en from "./en";
-import zh, { LocaleType } from "./zh";
+import cn, { LocaleType } from "./cn";
 
 const ALL_LANGS = {
-  zh,
+  cn,
   en,
 };
 
 export type Lang = keyof typeof ALL_LANGS;
 const LANG_KEY = "lang";
-const DEFAULT_LANG = "zh";
+const DEFAULT_LANG = "cn";
 
 export const AllLangs = Object.keys(ALL_LANGS) as Lang[];
 
@@ -46,7 +46,7 @@ export function getLang(): Lang {
   return DEFAULT_LANG;
 }
 
-const fallbackLang = zh;
+const fallbackLang = cn;
 const targetLang = ALL_LANGS[getLang()] as LocaleType;
 
 export default fallbackLang as LocaleType;

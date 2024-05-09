@@ -6,21 +6,88 @@ import LeftIcon from "../icons/left.svg";
 import LightningIcon from "../icons/lightning.svg";
 import EyeIcon from "../icons/eye.svg";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Path } from "../constant";
+import { Path, SlotID } from "../constant";
 import { showConfirm } from "./ui-lib";
-import { useAppConfig } from "../store";
+import { useAppConfig, useChatStore } from "../store";
 import { EmojiAvatar } from "./emoji";
-import { useRef } from "react";
-import { maskStore } from "../store/mask";
+import { useEffect, useRef, useState } from "react";
+import { Mask, maskStore } from "../store/mask";
+import { MaskAvatar } from "./mask";
+
+function MaskItem(props: { mask: Mask; onClick?: () => void }) {
+  return (
+    <div className={styles["mask"]} onClick={props.onClick}>
+      <MaskAvatar
+        avatar={props.mask.avatar}
+        model={props.mask.modelConfig.model}
+      />
+      <div className={styles["mask-name"] + " one-line"}>{props.mask.name}</div>
+    </div>
+  );
+}
+
+/**
+ * 动态计算mask组距离
+ * @param masks
+ * @returns
+ */
+export function useMaskGroup(masks: Mask[]) {
+  const [groups, setGroups] = useState<Mask[][]>([]);
+
+  useEffect(() => {
+    const computeGroup = () => {
+      const appBody = document.getElementById(SlotID.AppBody);
+      if (!appBody || masks.length === 0) return;
+
+      const rect = appBody.getBoundingClientRect();
+      const maxWidth = rect.width;
+      const maxHeight = rect.height * 0.6;
+      const maskItemWidth = 120;
+      const maskItemHeight = 50;
+
+      const randomMask = () => masks[Math.floor(Math.random() * masks.length)];
+      let maskIndex = 0;
+      const nextMask = () => masks[maskIndex++ % masks.length];
+
+      const rows = Math.ceil(maxHeight / maskItemHeight);
+      const cols = Math.ceil(maxWidth / maskItemWidth);
+
+      const newGroups = new Array(rows)
+        .fill(0)
+        .map((_, _i) =>
+          new Array(cols)
+            .fill(0)
+            .map((_, j) => (j < 1 || j > cols - 2 ? randomMask() : nextMask()))
+        );
+
+      setGroups(newGroups);
+    };
+    computeGroup();
+
+    window.addEventListener("resize", computeGroup);
+    return () => window.removeEventListener("resize", computeGroup);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return groups;
+}
 
 export function NewChat() {
   const navigate = useNavigate();
   const config = useAppConfig();
   const { state } = useLocation();
+  const chatStore = useChatStore();
 
   const maskRef = useRef<HTMLDivElement>(null);
-  const masks = maskStore.getAll();
+  const masks = maskStore().getAll();
   const groups = useMaskGroup(masks);
+
+  const startChat = (mask?: Mask) => {
+    setTimeout(() => {
+      chatStore.newSession(mask);
+      navigate(Path.Chat);
+    }, 10);
+  };
 
   return (
     <div className={styles["new-chat"]}>

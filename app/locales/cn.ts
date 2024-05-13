@@ -51,6 +51,256 @@ const cn = {
     },
   },
 
+  Settings: {
+    Title: "设置",
+    SubTitle: "所有设置选项",
+
+    Danger: {
+      Reset: {
+        Title: "重置所有设置",
+        SubTitle: "重置所有设置项回默认值",
+        Action: "立即重置",
+        Confirm: "确认重置所有设置？",
+      },
+      Clear: {
+        Title: "清除所有数据",
+        SubTitle: "清除所有聊天、设置数据",
+        Action: "立即清除",
+        Confirm: "确认清除所有聊天、设置数据？",
+      },
+    },
+    Lang: {
+      Name: "Language", // ATTENTION: if you wanna add a new translation, please do not translate this value, leave it as `Language`
+      All: "所有语言",
+    },
+    Avatar: "头像",
+    FontSize: {
+      Title: "字体大小",
+      SubTitle: "聊天内容的字体大小",
+    },
+    InjectSystemPrompts: {
+      Title: "注入系统级提示信息",
+      SubTitle: "强制给每次请求的消息列表开头添加一个模拟 ChatGPT 的系统提示",
+    },
+    InputTemplate: {
+      Title: "用户输入预处理",
+      SubTitle: "用户最新的一条消息会填充到此模板",
+    },
+
+    Update: {
+      Version: (x: string) => `当前版本：${x}`,
+      IsLatest: "已是最新版本",
+      CheckUpdate: "检查更新",
+      IsChecking: "正在检查更新...",
+      FoundUpdate: (x: string) => `发现新版本：${x}`,
+      GoToUpdate: "前往更新",
+    },
+    SendKey: "发送键",
+    Theme: "主题",
+    TightBorder: "无边框模式",
+    SendPreviewBubble: {
+      Title: "预览气泡",
+      SubTitle: "在预览气泡中预览 Markdown 内容",
+    },
+    AutoGenerateTitle: {
+      Title: "自动生成标题",
+      SubTitle: "根据对话内容生成合适的标题",
+    },
+    Sync: {
+      CloudState: "云端数据",
+      NotSyncYet: "还没有进行过同步",
+      Success: "同步成功",
+      Fail: "同步失败",
+
+      Config: {
+        Modal: {
+          Title: "配置云同步",
+          Check: "检查可用性",
+        },
+        SyncType: {
+          Title: "同步类型",
+          SubTitle: "选择喜爱的同步服务器",
+        },
+        Proxy: {
+          Title: "启用代理",
+          SubTitle: "在浏览器中同步时，必须启用代理以避免跨域限制",
+        },
+        ProxyUrl: {
+          Title: "代理地址",
+          SubTitle: "仅适用于本项目自带的跨域代理",
+        },
+
+        WebDav: {
+          Endpoint: "WebDAV 地址",
+          UserName: "用户名",
+          Password: "密码",
+        },
+
+        UpStash: {
+          Endpoint: "UpStash Redis REST Url",
+          UserName: "备份名称",
+          Password: "UpStash Redis REST Token",
+        },
+      },
+
+      LocalState: "本地数据",
+      Overview: (overview: any) => {
+        return `${overview.chat} 次对话，${overview.message} 条消息，${overview.prompt} 条提示词，${overview.mask} 个面具`;
+      },
+      ImportFailed: "导入失败",
+    },
+    Mask: {
+      Splash: {
+        Title: "面具启动页",
+        SubTitle: "新建聊天时，展示面具启动页",
+      },
+      Builtin: {
+        Title: "隐藏内置面具",
+        SubTitle: "在所有面具列表中隐藏内置面具",
+      },
+    },
+    Prompt: {
+      Disable: {
+        Title: "禁用提示词自动补全",
+        SubTitle: "在输入框开头输入 / 即可触发自动补全",
+      },
+      List: "自定义提示词列表",
+      ListCount: (builtin: number, custom: number) =>
+        `内置 ${builtin} 条，用户定义 ${custom} 条`,
+      Edit: "编辑",
+      Modal: {
+        Title: "提示词列表",
+        Add: "新建",
+        Search: "搜索提示词",
+      },
+      EditModal: {
+        Title: "编辑提示词",
+      },
+    },
+    HistoryCount: {
+      Title: "附带历史消息数",
+      SubTitle: "每次请求携带的历史消息数",
+    },
+    CompressThreshold: {
+      Title: "历史消息长度压缩阈值",
+      SubTitle: "当未压缩的历史消息超过该值时，将进行压缩",
+    },
+
+    Usage: {
+      Title: "余额查询",
+      SubTitle(used: any, total: any) {
+        return `本月已使用 $${used}，订阅总额 $${total}`;
+      },
+      IsChecking: "正在检查…",
+      Check: "重新检查",
+      NoAccess: "输入 API Key 或访问密码查看余额",
+    },
+
+    Access: {
+      AccessCode: {
+        Title: "访问密码",
+        SubTitle: "管理员已开启加密访问",
+        Placeholder: "请输入访问密码",
+      },
+      CustomEndpoint: {
+        Title: "自定义接口",
+        SubTitle: "是否使用自定义 Azure 或 OpenAI 服务",
+      },
+      Provider: {
+        Title: "模型服务商",
+        SubTitle: "切换不同的服务商",
+      },
+      OpenAI: {
+        ApiKey: {
+          Title: "API Key",
+          SubTitle: "使用自定义 OpenAI Key 绕过密码访问限制",
+          Placeholder: "OpenAI API Key",
+        },
+
+        Endpoint: {
+          Title: "接口地址",
+          SubTitle: "除默认地址外，必须包含 http(s)://",
+        },
+      },
+      Azure: {
+        ApiKey: {
+          Title: "接口密钥",
+          SubTitle: "使用自定义 Azure Key 绕过密码访问限制",
+          Placeholder: "Azure API Key",
+        },
+
+        Endpoint: {
+          Title: "接口地址",
+          SubTitle: "样例：",
+        },
+
+        ApiVerion: {
+          Title: "接口版本 (azure api version)",
+          SubTitle: "选择指定的部分版本",
+        },
+      },
+      Anthropic: {
+        ApiKey: {
+          Title: "接口密钥",
+          SubTitle: "使用自定义 Anthropic Key 绕过密码访问限制",
+          Placeholder: "Anthropic API Key",
+        },
+
+        Endpoint: {
+          Title: "接口地址",
+          SubTitle: "样例：",
+        },
+
+        ApiVerion: {
+          Title: "接口版本 (claude api version)",
+          SubTitle: "选择一个特定的 API 版本输入",
+        },
+      },
+      Google: {
+        ApiKey: {
+          Title: "API 密钥",
+          SubTitle: "从 Google AI 获取您的 API 密钥",
+          Placeholder: "输入您的 Google AI Studio API 密钥",
+        },
+
+        Endpoint: {
+          Title: "终端地址",
+          SubTitle: "示例：",
+        },
+
+        ApiVersion: {
+          Title: "API 版本（仅适用于 gemini-pro）",
+          SubTitle: "选择一个特定的 API 版本",
+        },
+      },
+      CustomModel: {
+        Title: "自定义模型名",
+        SubTitle: "增加自定义模型可选项，使用英文逗号隔开",
+      },
+    },
+
+    Model: "模型 (model)",
+    Temperature: {
+      Title: "随机性 (temperature)",
+      SubTitle: "值越大，回复越随机",
+    },
+    TopP: {
+      Title: "核采样 (top_p)",
+      SubTitle: "与随机性类似，但不要和随机性一起更改",
+    },
+    MaxTokens: {
+      Title: "单次回复限制 (max_tokens)",
+      SubTitle: "单次交互所用的最大 Token 数",
+    },
+    PresencePenalty: {
+      Title: "话题新鲜度 (presence_penalty)",
+      SubTitle: "值越大，越有可能扩展到新话题",
+    },
+    FrequencyPenalty: {
+      Title: "频率惩罚度 (frequency_penalty)",
+      SubTitle: "值越大，越有可能降低重复字词",
+    },
+  },
   Context: {
     Toast: (x: any) => `包含 ${x} 条预设提示词`,
     Edit: "当前对话设置",

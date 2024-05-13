@@ -27,6 +27,7 @@ import { useAppConfig } from "../store/configs";
 import { getClientConfig } from "../config/client";
 import { ClientApi } from "../client/api";
 import { useAccessStore } from "../store";
+import { AuthPage } from "./auth";
 
 export function Loading(props: { noLogo?: boolean }) {
   return (
@@ -44,7 +45,6 @@ const Chat = dynamic(async () => (await import("./chat")).Chat, {
 const NewChat = dynamic(async () => (await import("./new-chat")).NewChat, {
   loading: () => <Loading noLogo />,
 });
-
 export function useSwitchTheme() {
   const config = useAppConfig();
 
@@ -133,7 +133,9 @@ function Screen() {
       }
     >
       {isAuth ? (
-        <></>
+        <>
+          <AuthPage />
+        </>
       ) : (
         <>
           <SideBar className={isHome ? styles["sidebar-show"] : ""} />
